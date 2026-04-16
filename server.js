@@ -1,6 +1,7 @@
 const express = require('express');
 const twilio = require('twilio');
 const cors = require('cors');
+const admin = require('firebase-admin');
 
 const app = express();
 app.use(express.json());
@@ -14,6 +15,22 @@ const BACKEND_URL = process.env.BACKEND_URL;
 
 const client = twilio(ACCOUNT_SID, AUTH_TOKEN);
 const activeCalls = {};
+
+// ── FIREBASE ADMIN INIT ───────────────────────────────────────
+// Reads service account from environment variable set in Render
+if (!admin.apps.length) {
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: serviceAccount.project_id
+    });
+    console.log('Firebase Admin initialized for project:', serviceAccount.project_id);
+  } catch (err) {
+    console.error('Firebase Admin init error:', err.message);
+  }
+}
+const db = admin.firestore();
 
 app.post('/place-call', async (req, res) => {
   const { to, name, memberId, sessionId } = req.body;
@@ -131,20 +148,15 @@ app.post('/call-status', function(req, res) {
 
 async function notifyApp(data) {
   try {
-    var admin = require('firebase-admin');
-    if (!admin.apps.length) {
-      admin.initializeApp({ credential: admin.credential.applicationDefault() });
-    }
-    var db = admin.firestore();
     await db.collection('recall-responses').add({
-      memberId: data.memberId,
-      sessionId: data.sessionId,
+      memberId: data.memberId || '',
+      sessionId: data.sessionId || '',
       responding: data.responding || false,
-      name: data.name,
+      name: data.name || '',
       status: data.status || (data.responding ? 'answered-yes' : 'answered-no'),
       timestamp: admin.firestore.FieldValue.serverTimestamp()
     });
-    console.log('Response written to Firestore: ' + data.name + ' - ' + (data.responding ? 'COMING IN' : 'NOT COMING IN'));
+    console.log('Firestore updated: ' + data.name + ' - ' + (data.responding ? 'COMING IN' : 'NOT COMING IN'));
   } catch (err) {
     console.error('Firestore write error:', err.message);
   }
