@@ -99,14 +99,11 @@ app.all('/voice', function(req, res) {
 
     console.log('Action URL:', actionUrl);
 
-    var gather = twiml.gather({ numDigits: '1', action: actionUrl, method: 'POST', timeout: 15 });
+    var gather = twiml.gather({ numDigits: '1', action: actionUrl, method: 'POST', timeout: 8 });
     gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
-      'Fairview Fire Department recall. ' + name + ', you are being recalled. ' +
-      'Press 1 if you are coming in. Press 2 if you are not coming in.'
+      'Fairview Fire recall. ' + name + '. Press 1 to respond. Press 2 if unavailable.'
     );
-    gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
-      'Press 1 if you are coming in. Press 2 if you are not coming in.'
-    );
+
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
       'We did not receive a response. Please call back or check the Chiefs Aide app. Goodbye.'
     );
