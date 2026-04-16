@@ -76,7 +76,7 @@ app.post('/place-call', async (req, res) => {
 });
 
 // ── VOICE (what plays when answered) ─────────────────────────
-app.post('/voice', function(req, res) {
+app.all('/voice', function(req, res) {
   try {
     var name      = (req.query.name      || 'Member').trim();
     var memberId  = (req.query.memberId  || '').trim();
@@ -85,7 +85,8 @@ app.post('/voice', function(req, res) {
     console.log('Voice endpoint hit — name:', name, 'AnsweredBy:', req.body.AnsweredBy);
 
     // Voicemail / answering machine
-    if (req.body.AnsweredBy === 'machine_start' || req.body.AnsweredBy === 'fax') {
+    var answeredBy = (req.body && req.body.AnsweredBy) || req.query.AnsweredBy || '';
+    if (answeredBy === 'machine_start' || answeredBy === 'fax') {
       return res.type('text/xml').send(
         '<?xml version="1.0" encoding="UTF-8"?>' +
         '<Response>' +
@@ -136,9 +137,9 @@ app.post('/voice', function(req, res) {
 });
 
 // ── KEYPRESS (1=yes, 2=no) ────────────────────────────────────
-app.post('/keypress', function(req, res) {
+app.all('/keypress', function(req, res) {
   try {
-    var digit     = req.body.Digits || '';
+    var digit     = (req.body && req.body.Digits) || req.query.Digits || '';
     var memberId  = (req.query.memberId  || '').trim();
     var sessionId = (req.query.sessionId || '').trim();
     var name      = (req.query.name      || 'Member').trim();
@@ -168,7 +169,7 @@ app.post('/keypress', function(req, res) {
 });
 
 // ── CALL STATUS CALLBACK ──────────────────────────────────────
-app.post('/call-status', function(req, res) {
+app.all('/call-status', function(req, res) {
   try {
     var CallSid    = req.body.CallSid    || '';
     var CallStatus = req.body.CallStatus || '';
