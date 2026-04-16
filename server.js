@@ -49,24 +49,40 @@ app.post('/voice', function(req, res) {
   var sessionId = req.query.sessionId || '';
 
   if (req.body.AnsweredBy === 'machine_start' || req.body.AnsweredBy === 'fax') {
-    res.type('text/xml').send('<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Matthew" language="en-US">This is an automated recall notification from Fairview Fire Department for ' + name + '. Please call back or check the Chiefs Aide app.</Say></Response>');
+    res.type('text/xml').send(
+      '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<Response>' +
+      '<Say voice="Polly.Matthew" language="en-US">' +
+      'This is Fairview Fire Department. ' +
+      name + ', you have been selected for a recall. ' +
+      'Please call back or check the Chiefs Aide app.' +
+      '</Say>' +
+      '</Response>'
+    );
     return;
   }
 
   var actionUrl = BACKEND_URL + '/keypress?memberId=' + encodeURIComponent(memberId) + '&sessionId=' + encodeURIComponent(sessionId) + '&name=' + encodeURIComponent(name);
 
-  var twiml = '<?xml version="1.0" encoding="UTF-8"?>';
-  twiml += '<Response>';
-  twiml += '<Gather numDigits="1" action="' + actionUrl + '" method="POST" timeout="10">';
-  twiml += '<Say voice="Polly.Matthew" language="en-US">';
-  twiml += 'This is an automated recall notification from Fairview Fire Department. ';
-  twiml += name + ', there is an active recall. ';
-  twiml += 'Press 1 if you are responding. ';
-  twiml += 'Press 2 if you are unavailable.';
-  twiml += '</Say>';
-  twiml += '</Gather>';
-  twiml += '<Say voice="Polly.Matthew" language="en-US">We did not receive your input. Please call back or check the Chiefs Aide app. Goodbye.</Say>';
-  twiml += '</Response>';
+  var twiml =
+    '<?xml version="1.0" encoding="UTF-8"?>' +
+    '<Response>' +
+    '<Gather numDigits="1" action="' + actionUrl + '" method="POST" timeout="15">' +
+    '<Say voice="Polly.Matthew" language="en-US">' +
+    'Fairview Fire Department recall. ' +
+    name + ', you are being recalled. ' +
+    'Press 1 if you are coming in. ' +
+    'Press 2 if you are not coming in.' +
+    '</Say>' +
+    '<Say voice="Polly.Matthew" language="en-US">' +
+    'Press 1 if you are coming in. ' +
+    'Press 2 if you are not coming in.' +
+    '</Say>' +
+    '</Gather>' +
+    '<Say voice="Polly.Matthew" language="en-US">' +
+    'We did not receive a response. Please call back or check the Chiefs Aide app. Goodbye.' +
+    '</Say>' +
+    '</Response>';
 
   res.type('text/xml').send(twiml);
 });
@@ -78,16 +94,19 @@ app.post('/keypress', function(req, res) {
   var name = req.query.name || 'Member';
   var responding = digit === '1';
 
-  console.log(name + ' pressed ' + digit + ' - ' + (responding ? 'RESPONDING' : 'DECLINED'));
+  console.log(name + ' pressed ' + digit + ' - ' + (responding ? 'COMING IN' : 'NOT COMING IN'));
   notifyApp({ memberId: memberId, sessionId: sessionId, responding: responding, name: name });
 
-  var twiml = '<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Matthew" language="en-US">';
-  if (responding) {
-    twiml += 'Thank you ' + name + '. You are marked as responding. Please respond safely. Goodbye.';
-  } else {
-    twiml += 'Thank you ' + name + '. You are marked as unavailable. Goodbye.';
-  }
-  twiml += '</Say></Response>';
+  var twiml =
+    '<?xml version="1.0" encoding="UTF-8"?>' +
+    '<Response>' +
+    '<Say voice="Polly.Matthew" language="en-US">' +
+    (responding
+      ? 'Thank you ' + name + '. You are marked as responding. Please respond safely. Goodbye.'
+      : 'Thank you ' + name + '. You are marked as not responding. Goodbye.'
+    ) +
+    '</Say>' +
+    '</Response>';
 
   res.type('text/xml').send(twiml);
 });
@@ -98,7 +117,13 @@ app.post('/call-status', function(req, res) {
   var callInfo = activeCalls[CallSid] || {};
   console.log('Call status: ' + (callInfo.name || CallSid) + ' - ' + CallStatus);
   if (CallStatus === 'no-answer' || CallStatus === 'busy' || CallStatus === 'failed' || CallStatus === 'canceled') {
-    notifyApp({ memberId: callInfo.memberId, sessionId: callInfo.sessionId, responding: false, name: callInfo.name, status: CallStatus });
+    notifyApp({
+      memberId: callInfo.memberId,
+      sessionId: callInfo.sessionId,
+      responding: false,
+      name: callInfo.name,
+      status: CallStatus
+    });
   }
   delete activeCalls[CallSid];
   res.sendStatus(200);
@@ -119,7 +144,7 @@ async function notifyApp(data) {
       status: data.status || (data.responding ? 'answered-yes' : 'answered-no'),
       timestamp: admin.firestore.FieldValue.serverTimestamp()
     });
-    console.log('Response written to Firestore: ' + data.name + ' - ' + (data.responding ? 'YES' : 'NO'));
+    console.log('Response written to Firestore: ' + data.name + ' - ' + (data.responding ? 'COMING IN' : 'NOT COMING IN'));
   } catch (err) {
     console.error('Firestore write error:', err.message);
   }
