@@ -59,8 +59,7 @@ app.post('/place-call', async (req, res) => {
       statusCallback: BACKEND_URL + '/call-status',
       statusCallbackMethod: 'POST',
       statusCallbackEvent: ['completed', 'no-answer', 'busy', 'failed'],
-      timeout: 30,
-      machineDetection: 'Enable'
+      timeout: 30
     });
     activeCalls[call.sid] = { memberId, sessionId, name, phone };
     console.log('Call SID:', call.sid);
@@ -78,20 +77,8 @@ app.all('/voice', function(req, res) {
     var name      = (params.name      || 'Member').trim();
     var memberId  = (params.memberId  || '').trim();
     var sessionId = (params.sessionId || '').trim();
-    var answeredBy = params.AnsweredBy || '';
-
-    console.log('Voice hit — name:', name, 'AnsweredBy:', answeredBy);
-
+    console.log('Voice hit — name:', name);
     var twiml = new VoiceResponse();
-
-    if (answeredBy === 'machine_start' || answeredBy === 'fax') {
-      twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
-        'This is Fairview Fire Department. ' + name + ', you have been selected for a recall. ' +
-        'Please call back or check the Chiefs Aide app.'
-      );
-      res.type('text/xml').send(twiml.toString());
-      return;
-    }
 
     var actionUrl = BACKEND_URL + '/keypress?memberId=' + encodeURIComponent(memberId)
       + '&sessionId=' + encodeURIComponent(sessionId)
