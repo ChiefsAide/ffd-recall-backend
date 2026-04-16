@@ -100,8 +100,8 @@ app.all('/voice', function(req, res) {
 
     var actionUrl = BACKEND_URL + '/keypress'
       + '?memberId=' + encodeURIComponent(memberId)
-      + '&sessionId=' + encodeURIComponent(sessionId)
-      + '&name=' + encodeURIComponent(name);
+      + '&amp;sessionId=' + encodeURIComponent(sessionId)
+      + '&amp;name=' + encodeURIComponent(name);
 
     console.log('Keypress action URL:', actionUrl);
 
