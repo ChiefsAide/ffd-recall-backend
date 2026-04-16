@@ -86,7 +86,7 @@ app.all('/voice', function(req, res) {
 
     console.log('Action URL:', actionUrl);
 
-    var gather = twiml.gather({ numDigits: '1', action: actionUrl, method: 'POST', timeout: 8 });
+    var gather = twiml.gather({ numDigits: '1', action: actionUrl, method: 'POST', timeout: 20 });
     gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
       'Fairview Fire recall. ' + name + '. Press 1 to respond. Press 2 if unavailable.'
     );
